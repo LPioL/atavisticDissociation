@@ -47,3 +47,4 @@ test_results/
 # Temporary files
 *.tmp
 *.temp
+analysis_atavism_multi_dataset.py
