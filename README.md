@@ -68,8 +68,8 @@ The analysis uses 19 evolutionary age categories (ranks 1-19):
 19. Primates (youngest)
 
 ### Output Interpretation
-- **Red stars**: Over-represented categories (FDR < 0.05, fold change > 1.1)
-- **Black stars**: Under-represented categories (FDR < 0.05, fold change < 0.9)
+- **Red stars**: Over-represented categories (FDR < 0.05)
+- **Black stars**: Under-represented categories (FDR < 0.05)
 - **Mean age shift**: Negative values indicate shift toward older ages
 
 ## Citation
