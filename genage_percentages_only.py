@@ -96,6 +96,7 @@ def load_genage_data():
         
         return genage_upregulated, genage_downregulated
 
+
 def analyze_gene_set_enrichment_enhanced(gene_list, age_human_genes, analysis_name, evolutionary_order):
     """Perform hypergeometric analysis and return results DataFrame."""
     print(f"Performing hypergeometric analysis for {analysis_name}...")
@@ -157,21 +158,17 @@ def analyze_gene_set_enrichment_enhanced(gene_list, age_human_genes, analysis_na
         result['P_Value_Over_FDR'] = p_corrected_over[i]
         result['P_Value_Under_FDR'] = p_corrected_under[i]
         
-        # Determine significance
-        if result['P_Value_Over_FDR'] < 0.05 and result['Fold_Change'] > 1.1:
-            result['Significant_Over'] = True
-            result['Significant_Under'] = False
-            result['Significant_FDR'] = True
+        # Determine significance for over and under-representation separately
+        result['Significant_Over'] = result['P_Value_Over_FDR'] < 0.05 and result['Fold_Change'] > 1.1
+        result['Significant_Under'] = result['P_Value_Under_FDR'] < 0.05 and result['Fold_Change'] < 0.9
+        result['Significant_FDR'] = result['Significant_Over'] or result['Significant_Under']
+        
+        # Determine representation type
+        if result['Significant_Over']:
             result['Representation_Type'] = 'Over-represented'
-        elif result['P_Value_Under_FDR'] < 0.05 and result['Fold_Change'] < 0.9:
-            result['Significant_Over'] = False
-            result['Significant_Under'] = True
-            result['Significant_FDR'] = True
+        elif result['Significant_Under']:
             result['Representation_Type'] = 'Under-represented'
         else:
-            result['Significant_Over'] = False
-            result['Significant_Under'] = False
-            result['Significant_FDR'] = False
             result['Representation_Type'] = 'Not significant'
     
     # Create continuous results for Mann-Whitney test
@@ -263,12 +260,14 @@ def plot_percentages_only(results_df, gene_set_name, output_path, upregulated_ge
             for i, category in enumerate(evolutionary_order):
                 category_result = combined_results[combined_results['Category'] == category]
                 if not category_result.empty:
-                    fdr_significant = category_result['Significant_FDR'].iloc[0]
-                    if fdr_significant:
-                        is_over_represented = category_result['Significant_Over'].iloc[0]
-                        star_color = 'red' if is_over_represented else 'black'
+                    fdr_over = category_result['Significant_Over'].iloc[0]
+                    fdr_under = category_result['Significant_Under'].iloc[0]
+                    if fdr_over:
                         ax.text(i - width/2, upregulated_pct.values[i] + downregulated_pct.values[i] + 2, 
-                               '*', ha='center', va='bottom', fontsize=48, fontweight='bold', color=star_color)
+                               '*', ha='center', va='bottom', fontsize=48, fontweight='bold', color='red')
+                    elif fdr_under:
+                        ax.text(i - width/2, upregulated_pct.values[i] + downregulated_pct.values[i] + 2, 
+                               '*', ha='center', va='bottom', fontsize=48, fontweight='bold', color='black')
     
     else:
         # Original percentages comparison (for single gene set)
@@ -279,11 +278,12 @@ def plot_percentages_only(results_df, gene_set_name, output_path, upregulated_ge
         
         # Add significance stars with proper over/under-representation testing
         for i, (_, row) in enumerate(results_df.iterrows()):
-            if row['Significant_FDR']:
-                is_over_represented = row['Significant_Over']
-                star_color = 'red' if is_over_represented else 'black'
+            if row['Significant_Over']:
                 ax.text(i, max(row['Observed_Percentage'], row['Baseline_Percentage']) + 0.5, 
-                        '*', ha='center', va='bottom', fontsize=48, fontweight='bold', color=star_color)
+                        '*', ha='center', va='bottom', fontsize=48, fontweight='bold', color='red')
+            elif row['Significant_Under']:
+                ax.text(i, max(row['Observed_Percentage'], row['Baseline_Percentage']) + 0.5, 
+                        '*', ha='center', va='bottom', fontsize=48, fontweight='bold', color='black')
     
     # Formatting (same as original second subfigure)
     ax.set_xlabel('Evolutionary Age', fontsize=24, fontweight='bold')
@@ -299,6 +299,7 @@ def plot_percentages_only(results_df, gene_set_name, output_path, upregulated_ge
     plt.close()
     
     return fig
+
 
 def save_mann_whitney_results(mann_whitney_results, output_dir):
     """Save Mann-Whitney U test results to CSV."""
@@ -344,6 +345,7 @@ def main():
         results_df, continuous_results = analyze_gene_set_enrichment_enhanced(
             gene_list, baseline_genes, analysis_name, evolutionary_order
         )
+        
         
         if results_df is not None:
             # Create the percentages plot (second subfigure only)
