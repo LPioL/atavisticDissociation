@@ -159,8 +159,8 @@ def analyze_gene_set_enrichment_enhanced(gene_list, age_human_genes, analysis_na
         result['P_Value_Under_FDR'] = p_corrected_under[i]
         
         # Determine significance for over and under-representation separately
-        result['Significant_Over'] = result['P_Value_Over_FDR'] < 0.05 and result['Fold_Change'] > 1.1
-        result['Significant_Under'] = result['P_Value_Under_FDR'] < 0.05 and result['Fold_Change'] < 0.9
+        result['Significant_Over'] = result['P_Value_Over_FDR'] < 0.05
+        result['Significant_Under'] = result['P_Value_Under_FDR'] < 0.05
         result['Significant_FDR'] = result['Significant_Over'] or result['Significant_Under']
         
         # Determine representation type
@@ -346,6 +346,12 @@ def main():
             gene_list, baseline_genes, analysis_name, evolutionary_order
         )
         
+        # Save hypergeometric results to CSV
+        if results_df is not None:
+            hypergeometric_path = os.path.join(output_dir, f'genage_{analysis_name.lower()}_hypergeometric_results.csv')
+            results_df.to_csv(hypergeometric_path, index=False)
+            print(f"Hypergeometric test results saved: {hypergeometric_path}")
+        
         
         if results_df is not None:
             # Create the percentages plot (second subfigure only)
@@ -386,6 +392,9 @@ def main():
     print("- genage_upregulated_percentages.png")
     print("- genage_downregulated_percentages.png") 
     print("- genage_combined_percentages.png")
+    print("- genage_upregulated_hypergeometric_results.csv")
+    print("- genage_downregulated_hypergeometric_results.csv")
+    print("- genage_combined_hypergeometric_results.csv")
     print("- genage_mann_whitney_results.csv")
 
 if __name__ == "__main__":
